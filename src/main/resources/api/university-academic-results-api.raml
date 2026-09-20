@@ -1,0 +1,78 @@
+#%RAML 1.0
+
+title: University Academic Results API
+version: v1
+description: API for updating university student academic results
+
+mediaType: application/json
+
+types:
+  GradeRequest:
+    type: object
+    properties:
+      subject:
+        type: string
+        required: true
+        minLength: 1
+      marks:
+        type: integer
+        required: true
+        minimum: 0
+        maximum: 100
+      grade:
+        type: string
+        required: true
+
+  GradeResponse:
+    type: object
+    properties:
+      message:
+        type: string
+      studentId:
+        type: integer
+
+/students/{studentId}/grade:
+  uriParameters:
+    studentId:
+      type: integer
+      description: Unique ID of the student
+
+  post:
+    description: Update the academic grade of a specific student
+
+    body:
+      application/json:
+        type: GradeRequest
+        example:
+          {
+            "subject": "MuleSoft",
+            "marks": 85,
+            "grade": "A"
+          }
+
+    responses:
+      200:
+        body:
+          application/json:
+            type: GradeResponse
+            example:
+              {
+                "message": "Grade updated successfully",
+                "studentId": 101
+              }
+
+      400:
+        body:
+          application/json:
+            example:
+              {
+                "message": "Invalid grade data"
+              }
+
+      404:
+        body:
+          application/json:
+            example:
+              {
+                "message": "Student not found"
+              }

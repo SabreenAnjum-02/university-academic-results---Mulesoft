@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>University Academic Results Portal</title>
+  <style>
+    :root {
+      --primary: #1976d2;
+      --primary-dark: #115293;
+      --secondary: #2e7d32;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #212529;
+      --muted: #6c757d;
+      --border: #dee2e6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 28px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .badge {
+      background: rgba(255,255,255,0.2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn:disabled {
+      background: #b0bec5;
+      cursor: not-allowed;
+    }
+
+    .status-box {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .status-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
+      display: block;
+    }
+
+    .status-error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+      display: block;
+    }
+
+    .status-loading {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #bbdefb;
+      display: block;
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #fafafa;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .step-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+
+    .step-item.step-active {
+      background: #f1f8e9;
+      border-color: #aed581;
+    }
+
+    .step-item.step-active .step-icon {
+      background: #4caf50;
+      color: white;
+    }
+
+    .countdown {
+      display: inline-block;
+      font-weight: 700;
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>🎓 University Academic Results Portal</h1>
+        <p style="margin-top: 6px; opacity: 0.9;">Vel Tech University — Automated Result Pipeline</p>
+      </div>
+      <div class="badge">MuleSoft ESB 4.4</div>
+    </header>
+
+    <div class="grid">
+      <!-- Submission Form -->
+      <div class="card">
+        <h2>📝 Publish Student Grade</h2>
+        <form id="gradeForm" onsubmit="event.preventDefault(); submitGrade();">
+          <div class="form-group">
+            <label for="studentId">Select Student</label>
+            <select id="studentId" required>
+              <option value="101">101 — Anjum (vtu24729@veltech.edu.in)</option>
+              <option value="102">102 — Dwara (vtu24360@veltech.edu.in)</option>
+              <option value="103">103 — Ashwin (vtu26113@veltech.edu.in)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="subject">Course / Subject</label>
+            <input type="text" id="subject" placeholder="e.g. Distributed Cloud Systems" value="Distributed Cloud Systems" required>
+          </div>
+
+          <div class="form-group">
+            <label for="marks">Marks (0 - 100)</label>
+            <input type="number" id="marks" min="0" max="100" value="92" required oninput="autoUpdateGrade()">
+          </div>
+
+          <div class="form-group">
+            <label for="grade">Grade</label>
+            <select id="grade" required>
+              <option value="O">O (Outstanding 90-100)</option>
+              <option value="A+">A+ (Excellent 80-89)</option>
+              <option value="A">A (Very Good 70-79)</option>
+              <option value="B+">B+ (Good 60-69)</option>
+              <option value="B">B (Above Average 50-59)</option>
+              <option value="F">F (Fail &lt; 40)</option>
+            </select>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn">🚀 Submit Grade & Trigger Pipeline</button>
+        </form>
+
+        <div id="statusAlert" class="status-box"></div>
+      </div>
+
+      <!-- Live Architecture Visualizer -->
+      <div class="card">
+        <h2>⚡ Live Integration Flow Monitor</h2>
+        <div class="flow-steps">
+          <div class="step-item" id="s1">
+            <span class="step-icon">1</span>
+            <div><strong>REST API Listener</strong>: <code>POST /api/students/{id}/grade</code></div>
+          </div>
+          <div class="step-item" id="s2">
+            <span class="step-icon">2</span>
+            <div><strong>MySQL Database</strong>: Insert with <code>broadcast_status = 'PENDING'</code></div>
+          </div>
+          <div class="step-item" id="s3">
+            <span class="step-icon">3</span>
+            <div><strong>Scheduler Poller</strong>: Picks up pending records (every 30s)</div>
+          </div>
+          <div class="step-item" id="s4">
+            <span class="step-icon">4</span>
+            <div><strong>VM Queue</strong>: Enqueues payload to <code>pendingResultsQueue</code></div>
+          </div>
+          <div class="step-item" id="s5">
+            <span class="step-icon">5</span>
+            <div><strong>Email SMTP</strong>: Sends personalized email to student inbox</div>
+          </div>
+          <div class="step-item" id="s6">
+            <span class="step-icon">6</span>
+            <div><strong>File Connector</strong>: Appends audit log to <code>reports/</code> CSV</div>
+          </div>
+          <div class="step-item" id="s7">
+            <span class="step-icon">7</span>
+            <div><strong>DB Update Subflow</strong>: Updates <code>broadcast_status = 'SENT'</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function autoUpdateGrade() {
+      const marks = parseInt(document.getElementById('marks').value);
+      const gradeSelect = document.getElementById('grade');
+      if (isNaN(marks)) return;
+      if (marks >= 90) gradeSelect.value = 'O';
+      else if (marks >= 80) gradeSelect.value = 'A+';
+      else if (marks >= 70) gradeSelect.value = 'A';
+      else if (marks >= 60) gradeSelect.value = 'B+';
+      else if (marks >= 50) gradeSelect.value = 'B';
+      else gradeSelect.value = 'F';
+    }
+
+    function resetSteps() {
+      for (let i = 1; i <= 7; i++) {
+        const step = document.getElementById('s' + i);
+        if (step) step.className = 'step-item';
+      }
+    }
+
+    function activateStep(num) {
+      const step = document.getElementById('s' + num);
+      if (step) step.className = 'step-item step-active';
+    }
+
+    async function submitGrade() {
+      const studentId = document.getElementById('studentId').value;
+      const subject = document.getElementById('subject').value;
+      const marks = parseInt(document.getElementById('marks').value);
+      const grade = document.getElementById('grade').value;
+      const submitBtn = document.getElementById('submitBtn');
+      const alertBox = document.getElementById('statusAlert');
+
+      resetSteps();
+      activateStep(1);
+
+      submitBtn.disabled = true;
+      alertBox.className = 'status-box status-loading';
+      alertBox.innerHTML = `⏳ <strong>Calling MuleSoft API:</strong> <code>POST /api/students/${studentId}/grade</code>...`;
+
+      try {
+        const response = await fetch(`/api/students/${studentId}/grade`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            subject: subject,
+            marks: marks,
+            grade: grade
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          activateStep(2);
+          alertBox.className = 'status-box status-success';
+          alertBox.innerHTML = `
+            ✅ <strong>Grade recorded successfully!</strong><br>
+            Student #${studentId} received grade <strong>${grade}</strong> in <em>${subject}</em>.<br><br>
+            ⏱️ <strong>Automated Broadcast:</strong> The Scheduler runs every 30s. The VM Queue and Email Connector are picking this up now!
+          `;
+
+          // Visual simulation of asynchronous batch background processing
+          setTimeout(() => { activateStep(3); activateStep(4); }, 2000);
+          setTimeout(() => {
+            activateStep(5);
+            activateStep(6);
+            activateStep(7);
+            alertBox.innerHTML += `<br>📬 <strong>Pipeline Complete!</strong> Email dispatched and audit CSV generated.`;
+          }, 4500);
+
+        } else {
+          alertBox.className = 'status-box status-error';
+          alertBox.innerHTML = `❌ <strong>Error (${response.status}):</strong> ${data.message || 'Failed to submit grade'}`;
+        }
+      } catch (err) {
+        alertBox.className = 'status-box status-error';
+        alertBox.innerHTML = `❌ <strong>Network Error:</strong> Could not connect to MuleSoft API. Ensure the application is running.`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

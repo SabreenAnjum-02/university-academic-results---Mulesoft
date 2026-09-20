@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="university-academic-results-test-suite.xml" />
+	<munit:test name="university-academic-results-test-suite-post:\students\(studentId)\grade:application\json:university-academic-results-api-configTest" doc:id="30eec6c1-5074-46ec-bf4d-a51d8411ca4d" description="Test">
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="f68819a7-77be-478f-8201-b41116330e2c" >
+												<munit:payload value='{"subject": "MuleSoft", "marks": 85, "grade": "A"}' mediaType="application/json" />
+				<munit:attributes value='#[{ uriParams: { studentId: "101" } }]' />
+			</munit:set-event>
+			<flow-ref doc:name="Flow-ref to post:\students\(studentId)\grade:application\json:university-academic-results-api-config" doc:id="5d44124b-d471-4028-a07f-8bdfeb2f9c32" name="post:\students\(studentId)\grade:application\json:university-academic-results-api-config"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="5e68c80e-8b1c-424c-a620-35783f9694a4" expression="#[payload.message]" is='#[MunitTools::equalTo("Grade updated successfully")]'/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

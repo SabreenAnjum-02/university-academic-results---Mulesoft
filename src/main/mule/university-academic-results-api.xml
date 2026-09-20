@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <configuration-properties doc:name="Configuration properties" doc:id="config-props" file="config.properties" />
+    <http:listener-config name="university-academic-results-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="university-academic-results-api-config" api="university-academic-results-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <api-gateway:autodiscovery apiId="21182871" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="cafc0139-f08d-4372-b92b-678a6da17d40" flowRef="university-academic-results-api-main" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="5375af72-1d4d-444f-9479-d6e2088a6aa7" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
+	</db:config>
+	<vm:config name="VM_Config" doc:name="VM Config" doc:id="8ba531e3-3173-47cc-bfd9-c76b4d03d196" >
+		<vm:queues >
+			<vm:queue queueName="pendingResultsQueue" />
+		</vm:queues>
+	</vm:config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="f8f23ccf-8c5b-45ec-8de4-aafa0b051e6c" >
+		<email:smtp-connection host="${email.host}" port="${email.port}" user="${email.user}" password="${email.password}" >
+			<pooling-profile />
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+				<email:property key="mail.smtp.auth" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="0c2fcb6b-a462-4690-9ee2-ae6319e7c3a1" >
+		<file:connection workingDir="C:\Users\sabre\AnypointStudio\reports" />
+	</file:config>
+	<flow name="university-academic-results-api-main">
+        <http:listener config-ref="university-academic-results-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="university-academic-results-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="university-academic-results-api-console">
+        <http:listener config-ref="university-academic-results-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="university-academic-results-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="university-academic-results-apiFlow2" doc:id="34099b88-a0bb-495d-8fa2-285be8ae56b1" >
+		<vm:listener queueName="pendingResultsQueue" doc:name="Listener" doc:id="52476d1b-66d1-4f0a-a4a1-3d2364fdf980" config-ref="VM_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8a0a894e-9f1e-4fbf-8e95-4f5c7f9c65af" message='"Processing notification for student result"'/>
+		<email:send doc:id="cd8e0038-be48-41b5-a66e-4278b29c01f9" config-ref="Email_SMTP" fromAddress="${email.from}" subject='#["Academic Result Notification - " ++ (payload.name default "Student")]'>
+			<email:to-addresses >
+				<email:to-address value="#[payload.email default 'vtu24729@veltech.edu.in']" />
+			</email:to-addresses>
+			<email:body contentType="text/html" encoding="UTF-8">
+				<email:content ><![CDATA[#[
+"<!DOCTYPE html>
+<html>
+<body style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
+  <div style='max-width: 600px; margin: 20px auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);'>
+    <div style='background: linear-gradient(135deg, #1976d2, #115293); color: white; padding: 20px; text-align: center;'>
+      <h2 style='margin: 0;'>🎓 Vel Tech University</h2>
+      <p style='margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;'>Official Academic Grade Statement</p>
+    </div>
+    <div style='padding: 24px;'>
+      <p>Dear <strong>" ++ (payload.name default "Student") ++ "</strong>,</p>
+      <p>Your academic evaluation for the course <strong>" ++ (payload.subject default "") ++ "</strong> has been officially published.</p>
+      
+      <table style='width: 100%; border-collapse: collapse; margin: 20px 0;'>
+        <tr style='background-color: #f8f9fa;'>
+          <th style='padding: 10px; border: 1px solid #dee2e6; text-align: left;'>Student ID</th>
+          <td style='padding: 10px; border: 1px solid #dee2e6;'>" ++ (payload.student_id default "") ++ "</td>
+        </tr>
+        <tr>
+          <th style='padding: 10px; border: 1px solid #dee2e6; text-align: left;'>Subject</th>
+          <td style='padding: 10px; border: 1px solid #dee2e6;'>" ++ (payload.subject default "") ++ "</td>
+        </tr>
+        <tr style='background-color: #f8f9fa;'>
+          <th style='padding: 10px; border: 1px solid #dee2e6; text-align: left;'>Marks Obtained</th>
+          <td style='padding: 10px; border: 1px solid #dee2e6;'><strong>" ++ (payload.marks default "") ++ " / 100</strong></td>
+        </tr>
+        <tr>
+          <th style='padding: 10px; border: 1px solid #dee2e6; text-align: left;'>Letter Grade</th>
+          <td style='padding: 10px; border: 1px solid #dee2e6;'><span style='font-size: 16px; font-weight: bold; color: #1976d2;'>" ++ (payload.grade default "") ++ "</span></td>
+        </tr>
+        <tr style='background-color: #f8f9fa;'>
+          <th style='padding: 10px; border: 1px solid #dee2e6; text-align: left;'>Result Status</th>
+          <td style='padding: 10px; border: 1px solid #dee2e6; font-weight: bold; color: " ++ (if ((payload.status default "") == "PASS") "#2e7d32" else "#d32f2f") ++ ";'>" ++ (payload.status default "") ++ "</td>
+        </tr>
+      </table>
+
+      <p style='margin-top: 20px;'>Please find your official result statement attached to this email as a CSV document.</p>
+      <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>
+      <p style='font-size: 12px; color: #777;'>Office of Controller of Examinations<br>Vel Tech Rangarajan Dr. Sagunthala R&D Institute of Science and Technology</p>
+    </div>
+  </div>
+</body>
+</html>"
+				]]]></email:content>
+			</email:body>
+			<email:attachments ><![CDATA[#[{
+				("Result-GradeCard-" ++ (payload.student_id default "") ++ ".csv"): ("StudentID,Name,Subject,Grade,Marks,Status\n" ++ (payload.student_id default "") ++ "," ++ (payload.name default "") ++ "," ++ (payload.subject default "") ++ "," ++ (payload.grade default "") ++ "," ++ (payload.marks default "") ++ "," ++ (payload.status default ""))
+			}]]]></email:attachments>
+		</email:send>
+		<file:write doc:id="b5dc1833-40aa-4bfd-8811-eda5a8a703e4" doc:name="" config-ref="File_Config" path='#["academic-report-" ++ now() as String {format: "yyyyMMdd-HHmmss"} ++ ".csv"]'>
+			<file:content ><![CDATA[#[["StudentID,Name,Subject,Grade,Marks,Status\n" ++ (payload.student_id default "") ++ "," ++ (payload.name default "") ++ "," ++ (payload.subject default "") ++ "," ++ (payload.grade default "") ++ "," ++ (payload.marks default "") ++ "," ++ (payload.status default "")]]]]></file:content>
+		</file:write>
+	</flow>
+	<flow name="university-academic-results-apiFlow1" doc:id="d1c57a2e-4aff-4e6b-8c1a-463ec1cb7ba2" >
+		<db:update doc:name="Update" doc:id="44710032-e880-4026-8867-9569d4cc7b4c" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE results SET broadcast_status = 'SENT' WHERE result_id = :resultId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'resultId': payload.result_id}]]]></db:input-parameters>
+		</db:update>
+	</flow>
+	<flow name="university-academic-results-apiFlow" doc:id="11ef2125-86a4-4a62-94a2-43de021c003f" >
+		<scheduler doc:name="Scheduler" doc:id="4a4b7208-5e6d-4da7-a18a-4676df64e328" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="30" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<db:select doc:name="Select" doc:id="7ec4b317-fb39-4321-a908-28b6a436e043" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT r.result_id, r.student_id, s.name, s.email, r.subject, r.marks, r.grade, r.status FROM results r JOIN students s ON r.student_id = s.student_id WHERE r.broadcast_status = 'PENDING']]></db:sql>
+		</db:select>
+		<choice doc:name="Choice" doc:id="fa1ee060-748e-4da2-959d-70a96c89b190" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<logger level="INFO" doc:name="Logger" doc:id="c7b88534-53d0-49b0-a5c3-23c36545e8e3" message='#["Found pending results to broadcast: " ++ sizeOf(payload)]'/>
+				<foreach doc:name="For Each">
+					<vm:publish doc:name="Publish" doc:id="eafaa1d3-2203-47b4-85e2-961ee491a3b9" config-ref="VM_Config" queueName="pendingResultsQueue"/>
+					<flow-ref doc:name="Flow Reference" doc:id="72f04109-cc52-46de-9eed-9e6b7e4564ae" name="university-academic-results-apiFlow1"/>
+				</foreach>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="dd6d9eac-e3f6-4868-bfa0-34649bff8ab7" message='#["No pending results found"]'/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="post:\students\(studentId)\grade:application\json:university-academic-results-api-config" doc:id="4e5ffbd1-a1d1-4d3d-9cd9-1eef095f1567">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="studentId">attributes.uriParams.'studentId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="eb0b1ccb-5ea8-4237-943b-14ba1e4bf221" message='"Received grade update request for student: " ++ attributes.uriParams.studentId'/>
+		<try doc:name="Try" doc:id="0c06afa5-7bc3-46b2-841b-3fece2b46eff" >
+			<db:select doc:name="Select" doc:id="a8084d1d-839d-41b4-8b21-500adab7b8d2" config-ref="Database_Config" target="studentInfo">
+   			<db:sql><![CDATA[SELECT * FROM students WHERE student_id = :studentId]]></db:sql>
+    		<db:input-parameters><![CDATA[#[{'studentId': attributes.uriParams.studentId}]]]></db:input-parameters>
+		</db:select>
+			<db:insert doc:name="Insert" doc:id="26a73955-dad1-44b9-b4e8-575895f13238" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO results (student_id, subject, marks, grade, status, broadcast_status) VALUES (:studentId, :subject, :marks, :grade, :status, 'PENDING')]]></db:sql>
+			<db:input-parameters><![CDATA[#[{'studentId': attributes.uriParams.studentId, 'subject': payload.subject, 'marks': payload.marks, 'grade': payload.grade, 'status': if ((payload.marks default 0) >= 40) "PASS" else "FAIL"}]]]></db:input-parameters>
+		</db:insert>
+			<logger level="INFO" doc:name="Logger" doc:id="78e5785c-8827-47a3-bd84-a356259b5ed1" message='"Grade inserted successfully for student: " ++ attributes.uriParams.studentId'/>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="658f6f9b-74de-4556-a68b-2fa8e73d47bb" type="DB:CONNECTIVITY">
+					<ee:transform doc:name="Transform Message" doc:id="13bd34e9-9f1d-44e7-a2c2-f6501964c152" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message": "Database error occurred",
+  "studentId": attributes.uriParams.studentId
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="1caf3757-ad8c-446b-aeba-0f2cc092abb4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message": "Grade updated successfully",
+  "studentId": (vars.studentId default 101) as Number
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+	<flow name="university-academic-results-portal" doc:id="3ea1a007-9314-4a28-a507-b448d5a26921">
+		<http:listener doc:name="Listener" doc:id="c673bfd1-d197-41a6-8624-3ba4b33a6e95" config-ref="university-academic-results-api-httpListenerConfig" path="/portal"/>
+		<parse-template doc:name="Parse Template" doc:id="336b325d-48bb-422b-b0e2-353fe963a154" location="portal.html"/>
+	</flow>
+</mule>
