@@ -11,12 +11,16 @@ An enterprise-grade, event-driven academic grading and broadcast integration bui
 
 ## 🌐 Live CloudHub 2.0 Web Portal
 
-Access the live interactive portal deployed on MuleSoft CloudHub:
+Access the live interactive portal deployed on MuleSoft CloudHub 2.0:  
 👉 **[https://universityacademicresults-uj2n56.5sc6y6-2.usa-e2.cloudhub.io/portal](https://universityacademicresults-uj2n56.5sc6y6-2.usa-e2.cloudhub.io/portal)**
+
+![Interactive University Results Portal](docs/images/portal-ui.png)
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ System Architecture & Workflow
+
+The solution follows an API-led, asynchronous event-driven architecture that decouples web client interactions from database updates and automated notifications:
 
 ```
                        +-----------------------------------+
@@ -48,14 +52,50 @@ Access the live interactive portal deployed on MuleSoft CloudHub:
 
 ---
 
-## ✨ Key Capabilities & Highlights
+## 📸 Implementation & Studio Canvas
+
+### 1. API Flows, Try-Scope Error Handling & Web Portal Flow
+Features API Autodiscovery, URI parameter extraction, transactional database validation inside a Try scope with `DB:CONNECTIVITY` error propagation, and HTTP web portal rendering.
+
+![API and Portal Flows](docs/images/studio-api-flows.png)
+
+### 2. Asynchronous Polling & VM Queue Decoupling
+A 30-second fixed-frequency scheduler queries pending evaluation records, validates batch size via a Choice router, and distributes jobs across a VM queue (`pendingResultsQueue`) using a For Each scope.
+
+![Scheduler and VM Queue Flow](docs/images/studio-scheduler-flow.png)
+
+---
+
+## 📬 Automated Multi-Channel Output
+
+### 1. Dynamic HTML Email with Official CSV Grade Attachment
+Personalized emails are rendered in rich HTML directly within Gmail/Outlook, displaying course details, letter grades, and color-coded status badges (**PASS** / **FAIL**), accompanied by an official downloadable `.csv` audit file.
+
+![Email Grade Statement](docs/images/email-notification.png)
+
+### 2. Relational Database Transaction Integrity
+Academic results are logged with transactional consistency in MySQL. Records transition from `PENDING` to `SENT` upon successful multi-channel delivery.
+
+![MySQL Database Records](docs/images/mysql-database.png)
+
+---
+
+## ☁️ CloudHub 2.0 Deployment
+
+The application is containerized and running in production on **Anypoint Runtime Manager (CloudHub 2.0 Shared Space, us-east-2)** with API Autodiscovery enabled.
+
+![CloudHub 2.0 Runtime Manager](docs/images/cloudhub-deployment.png)
+
+---
+
+## ✨ Key Technical Highlights
 
 1. **Enterprise API-Led Architecture**:
    - Designed using **RAML 1.0** and published to **Anypoint Exchange**.
    - Governed via **API Manager** with Autodiscovery (`apiId: 21182871`) and Rate Limiting policy.
 
 2. **Event-Driven Asynchronous Processing**:
-   - Uses **VM Queues** (`pendingResultsQueue`) to buffer and decouple result processing from user transactions, ensuring high throughput and resilience.
+   - Employs **VM Queues** (`pendingResultsQueue`) to buffer and decouple result processing from user transactions, ensuring high throughput and resilience.
 
 3. **Dynamic Multi-Channel Broadcasting**:
    - Queries student records from MySQL (`students` table joined with `results` table).
@@ -111,7 +151,7 @@ Content-Type: application/json
 ### Configuration
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/university-academic-results.git
+   git clone https://github.com/SabreenAnjum-02/university-academic-results---Mulesoft.git
    ```
 2. Navigate to `src/main/resources/`:
    - Copy `config-template.properties` to `config.properties`:
